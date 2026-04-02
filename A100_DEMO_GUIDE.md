@@ -6,21 +6,19 @@ Assumptions:
 - working directory: `~/workspace/Zhengwei`
 - large-file / cache directory: `/cache/Zhengwei`
 - network has no proxy
-- GitHub access may need the `githubfast` rewrite
+- GitHub should be tried directly first; only use `githubfast` if direct access fails
 - single-GPU demo target: `Wan 2.2 I2V 14B`
 
 The recommended first demo is `Wan`, because this repository explicitly recommends it and it gives the strongest controllability / quality trade-off.
 
 ## 0. One-time shell setup
 
-Run these in a fresh shell before cloning or installing from GitHub:
+Run these in a fresh shell:
 
 ```bash
 cd ~/workspace/Zhengwei
 
-export GIT_CONFIG_COUNT=1
-export GIT_CONFIG_KEY_0=url.https://githubfast.com/.insteadOf
-export GIT_CONFIG_VALUE_0=https://github.com/
+unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 ```
 
 Create cache directories on the large disk:
@@ -45,6 +43,8 @@ Optional sanity checks:
 ```bash
 nvidia-smi
 python3 --version
+which python3.10 || true
+which python3.11 || true
 ```
 
 ## 1. Clone the repo
@@ -65,12 +65,34 @@ https://github.com/turingw1/TTM.git
 ## 2. Create the Python environment
 
 Use `venv` unless your server already has a managed conda setup you prefer.
+Do not use Python 3.13 for this repo. Use Python 3.10 or 3.11.
 
 ```bash
 cd ~/workspace/Zhengwei/TTM
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
+python -V
 python -m pip install --upgrade pip setuptools wheel
+```
+
+If `python3.11` is not available, try:
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -V
+```
+
+Expected version:
+
+```text
+Python 3.10.x
+```
+
+or
+
+```text
+Python 3.11.x
 ```
 
 ## 3. Install PyTorch for CUDA
@@ -79,7 +101,7 @@ Install PyTorch first. Use the wheel index matching your CUDA runtime. For a typ
 
 ```bash
 pip install --index-url https://download.pytorch.org/whl/cu121 \
-  torch torchvision torchaudio
+  torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
 ```
 
 Verify CUDA is visible:
@@ -230,9 +252,11 @@ python run_svd.py \
   --motion_bucket_id 17
 ```
 
-## 7. If GitHub access is unstable
+## 7. If direct GitHub access fails
 
-Re-export the GitHub rewrite before `git clone` or any `pip install git+https://github.com/...` command:
+Try direct GitHub access first.
+
+If `git clone https://github.com/...` or `pip install git+https://github.com/...` fails, retry in the same shell with:
 
 ```bash
 export GIT_CONFIG_COUNT=1
@@ -241,6 +265,12 @@ export GIT_CONFIG_VALUE_0=https://github.com/
 ```
 
 Then rerun the failed command in the same shell.
+
+If `githubfast` itself is broken on the server, disable it again with:
+
+```bash
+unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+```
 
 ## 8. If the first run is slow
 
@@ -260,21 +290,19 @@ If you just want the shortest reproducible path:
 ```bash
 cd ~/workspace/Zhengwei
 
-export GIT_CONFIG_COUNT=1
-export GIT_CONFIG_KEY_0=url.https://githubfast.com/.insteadOf
-export GIT_CONFIG_VALUE_0=https://github.com/
+unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 
 mkdir -p /cache/Zhengwei/{hf,torch,xdg,ttm_outputs}
 
 git clone https://github.com/turingw1/TTM.git
 cd TTM
 
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 
 pip install --index-url https://download.pytorch.org/whl/cu121 \
-  torch torchvision torchaudio
+  torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
 
 pip install \
   accelerate transformers sentencepiece safetensors ftfy \
